@@ -5,7 +5,7 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Analytics } from "@vercel/analytics/react"
 import { SpeedInsights } from "@vercel/speed-insights/next"
-import Script from "next/script" // ✅ Import Script
+import Script from "next/script" 
 
 const roboto = Roboto({
   subsets: ["latin"],
@@ -28,6 +28,9 @@ export const metadata: Metadata = {
   title: "AnswerGit - AI-Powered GitHub Repository Explorer",
   description: "Understand GitHub repositories with AI-powered insights and analysis",
   generator: 'v0.dev',
+    icons: {
+      icon: '/logo.png',  
+    },
 }
 
 export default function RootLayout({
