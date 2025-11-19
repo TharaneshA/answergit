@@ -213,7 +213,7 @@ export default function AiAssistant({ username, repo }: AiAssistantProps) {
               </Avatar>
 
               {/* Message Bubble */}
-              <div className={`flex flex-col max-w-[85%] ${message.role === "user" ? "items-end" : "items-start"}`}>
+              <div className={`flex flex-col max-w-[85%] min-w-0 ${message.role === "user" ? "items-end" : "items-start"}`}>
                 <div className="flex items-center gap-2 mb-1 px-1">
                   <span className="text-xs font-medium text-muted-foreground">
                     {message.role === "assistant" ? "AnswerGit AI" : "You"}
@@ -224,7 +224,7 @@ export default function AiAssistant({ username, repo }: AiAssistantProps) {
                 </div>
 
                 <div
-                  className={`rounded-2xl px-5 py-3 shadow-sm text-sm leading-relaxed min-w-0 ${message.role === "user"
+                  className={`rounded-2xl px-5 py-3 shadow-sm text-sm leading-relaxed min-w-0 w-full ${message.role === "user"
                     ? "bg-primary text-primary-foreground rounded-tr-sm"
                     : "bg-muted border border-border text-black dark:text-zinc-300 rounded-tl-sm"
                     }`}

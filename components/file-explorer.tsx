@@ -10,7 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { Skeleton } from "@/components/ui/skeleton"
-import { LoadingAnimation } from "@/components/loading-animation"
+import { EnhancedLoading } from "@/components/enhanced-loading"
 
 interface FileNode {
   name: string
@@ -39,7 +39,7 @@ export default function FileExplorer({ repoData }: FileExplorerProps) {
   if (!repoData?.files) {
     return (
       <div className="flex items-center justify-center h-full">
-        <LoadingAnimation />
+        <EnhancedLoading />
       </div>
     )
   }
