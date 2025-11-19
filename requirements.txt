@@ -1,38 +1,7 @@
-# Core Dependencies
-next==15.2.4
-react==19.0.0
-react-dom==19.0.0
-
-# UI and Styling
-tailwindcss==3.4.17
-autoprefixer==10.4.20
-postcss==8.0.0
-tailwindcss-animate==1.0.7
-tailwind-merge==2.5.5
-
-# UI Components
-lucide-react==0.454.0
-next-themes==0.4.4
-
-# AI and GitHub Integration
-@google/generative-ai
-@octokit/rest
-
 # Python Dependencies
+fastapi==0.109.0
+uvicorn==0.27.0
 gitingest==0.1.0
 aiohttp==3.9.1
-
-# Form and Data Handling
-react-hook-form==7.54.1
-zod==3.24.1
-
-# Development Dependencies
-typescript==5.0.0
-@types/react==19.0.0
-@types/react-dom==19.0.0
-@types/node==22.0.0
-
-# Environment Variables
-Create a .env.local file with the following variables:
-GEMINI_API_KEY=your_gemini_api_key
-GITHUB_TOKEN=your_github_token
+httpx==0.26.0
+pydantic==2.6.0

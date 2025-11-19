@@ -5,7 +5,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 import asyncio
 import httpx  # For making async HTTP requests
 from typing import Optional
@@ -29,6 +29,12 @@ class IngestRequest(BaseModel):
     github_link: str
     max_file_size: int = 10 * 1024 * 1024  # default to 10MB
 
+    @validator('github_link')
+    def validate_github_link(cls, v):
+        if not v.startswith("https://github.com/"):
+            raise ValueError("URL must start with https://github.com/")
+        return v
+
 
 async def fetch_github_content(github_link: str, max_file_size: int) -> dict:
     try:
@@ -39,15 +45,15 @@ async def fetch_github_content(github_link: str, max_file_size: int) -> dict:
             "content": content
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logging.error(f"Error fetching content for {github_link}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to ingest repository: {str(e)}")
 
 @app.post("/ingest/")
 async def ingest_github_link(ingest_request: IngestRequest) -> dict:
     github_link = ingest_request.github_link
     max_file_size = ingest_request.max_file_size
-    logging.info(f"Received ingest request for github_link: {github_link}") # ADDED HERE
+    logging.info(f"Received ingest request for github_link: {github_link}")
     return await fetch_github_content(github_link, max_file_size)
-
 
 
 #  ping endpoint here
