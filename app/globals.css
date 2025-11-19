@@ -65,33 +65,34 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }
 }
 
-/* Custom scrollbar for dark theme */
+/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgb(24, 24, 27);
+  @apply bg-muted;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgb(63, 63, 70);
+  @apply bg-border;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgb(82, 82, 91);
+  @apply bg-muted-foreground/50;
 }
 
 /* Code syntax highlighting */
 pre {
-  background-color: rgb(24, 24, 27);
+  @apply bg-muted;
   border-radius: 0.375rem;
   padding: 1rem;
   overflow-x: auto;
@@ -102,4 +103,3 @@ code {
   font-size: 0.875rem;
   line-height: 1.5;
 }
-

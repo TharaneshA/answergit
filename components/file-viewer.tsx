@@ -18,7 +18,7 @@ const PDFViewer = dynamic(
     ssr: false,
     loading: () => (
       <div className="flex items-center justify-center w-full h-full">
-        <Skeleton className="w-32 h-32 bg-zinc-800" />
+        <Skeleton className="w-32 h-32 bg-muted" />
       </div>
     )
   }
@@ -39,12 +39,12 @@ interface FileViewerProps {
 // Helper function to determine file type based on extension
 function getFileType(filePath: string): 'image' | 'pdf' | 'markdown' | 'text' | 'notebook' {
   if (!filePath) return 'text';
-  
+
   const extension = filePath.split('.').pop();
   if (!extension) return 'text';
-  
+
   const ext = extension.toLowerCase();
-  
+
   if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp', 'ico', 'tiff', 'avif'].includes(ext)) {
     return 'image';
   } else if (ext === 'pdf') {
@@ -81,14 +81,14 @@ export default function FileViewer({ repoData }: FileViewerProps) {
     // Reset states
     setIsLoading(true)
     setError(null)
-    
+
     // Determine file type based on extension
     setFileType(getFileType(filePath))
 
     // Find file content in the cached data first
     const findFileContent = (files: any[]): string | null => {
       if (!files) return null;
-      
+
       for (const file of files) {
         if (file.path === filePath) {
           return file.content || null;
@@ -103,7 +103,7 @@ export default function FileViewer({ repoData }: FileViewerProps) {
 
     // Try to get content from cache first
     const cachedContent = repoData?.files ? findFileContent(repoData.files) : null;
-    
+
     if (cachedContent) {
       setFileContent(cachedContent);
       setIsLoading(false);
@@ -127,7 +127,7 @@ export default function FileViewer({ repoData }: FileViewerProps) {
 
         const content = await response.json()
         setFileContent(content)
-        
+
         // For image files, we need to handle base64 encoding
         if (fileType === 'image') {
           // Check if content is already base64 encoded
@@ -159,7 +159,7 @@ export default function FileViewer({ repoData }: FileViewerProps) {
 
   if (!filePath) {
     return (
-      <div className="h-full flex items-center justify-center text-zinc-500">
+      <div className="h-full flex items-center justify-center text-muted-foreground">
         <div className="text-center">
           <p>Select a file to view its content</p>
         </div>
@@ -170,12 +170,12 @@ export default function FileViewer({ repoData }: FileViewerProps) {
   if (isLoading) {
     return (
       <div className="p-4">
-        <div className="border-b bg-black p-2 px-4 text-sm font-mono text-zinc-400 rounded-t-lg">{filePath}</div>
+        <div className="border-b bg-muted p-2 px-4 text-sm font-mono text-muted-foreground rounded-t-lg">{filePath}</div>
         <div className="p-4">
-          <Skeleton className="h-[20px] w-3/4 mb-2 bg-zinc-800" />
-          <Skeleton className="h-[20px] w-1/2 mb-2 bg-zinc-800" />
-          <Skeleton className="h-[20px] w-5/6 mb-2 bg-zinc-800" />
-          <Skeleton className="h-[20px] w-2/3 mb-2 bg-zinc-800" />
+          <Skeleton className="h-[20px] w-3/4 mb-2 bg-muted" />
+          <Skeleton className="h-[20px] w-1/2 mb-2 bg-muted" />
+          <Skeleton className="h-[20px] w-5/6 mb-2 bg-muted" />
+          <Skeleton className="h-[20px] w-2/3 mb-2 bg-muted" />
         </div>
       </div>
     )
@@ -184,7 +184,7 @@ export default function FileViewer({ repoData }: FileViewerProps) {
   if (error) {
     return (
       <div className="h-full flex flex-col">
-        <div className="border-b bg-black p-2 px-4 text-sm font-mono text-zinc-400 rounded-t-lg">{filePath}</div>
+        <div className="border-b bg-muted p-2 px-4 text-sm font-mono text-muted-foreground rounded-t-lg">{filePath}</div>
         <div className="flex-1 flex items-center justify-center text-red-400">
           <div className="text-center p-4">
             <p>Error loading file: {error}</p>
@@ -197,12 +197,12 @@ export default function FileViewer({ repoData }: FileViewerProps) {
   if (!fileContent) {
     return (
       <div className="p-4">
-        <div className="border-b bg-black p-2 px-4 text-sm font-mono text-zinc-400 rounded-t-lg">{filePath}</div>
+        <div className="border-b bg-muted p-2 px-4 text-sm font-mono text-muted-foreground rounded-t-lg">{filePath}</div>
         <div className="p-4">
-          <Skeleton className="h-[20px] w-3/4 mb-2 bg-zinc-800" />
-          <Skeleton className="h-[20px] w-1/2 mb-2 bg-zinc-800" />
-          <Skeleton className="h-[20px] w-5/6 mb-2 bg-zinc-800" />
-          <Skeleton className="h-[20px] w-2/3 mb-2 bg-zinc-800" />
+          <Skeleton className="h-[20px] w-3/4 mb-2 bg-muted" />
+          <Skeleton className="h-[20px] w-1/2 mb-2 bg-muted" />
+          <Skeleton className="h-[20px] w-5/6 mb-2 bg-muted" />
+          <Skeleton className="h-[20px] w-2/3 mb-2 bg-muted" />
         </div>
       </div>
     )
@@ -213,10 +213,10 @@ export default function FileViewer({ repoData }: FileViewerProps) {
     switch (fileType) {
       case 'image':
         return (
-          <div className="flex items-center justify-center p-4 h-full bg-[#1a1a1a] rounded-lg">
+          <div className="flex items-center justify-center p-4 h-full bg-card rounded-lg">
             {base64Content ? (
               <div className="relative group cursor-zoom-in transition-transform hover:scale-105">
-                <img 
+                <img
                   src={base64Content}
                   alt="File content"
                   className="max-w-full max-h-[80vh] object-contain"
@@ -229,11 +229,11 @@ export default function FileViewer({ repoData }: FileViewerProps) {
         );
       case 'pdf':
         return (
-          <div className="flex flex-col items-center justify-center p-4 h-full bg-[#1a1a1a] rounded-lg">
+          <div className="flex flex-col items-center justify-center p-4 h-full bg-card rounded-lg">
             {fileContent ? (
               <PDFViewer pdfData={fileContent.startsWith('data:application/pdf;base64,') ? fileContent : `data:application/pdf;base64,${fileContent}`} />
             ) : (
-              <div className="text-zinc-400 flex flex-col items-center">
+              <div className="text-muted-foreground flex flex-col items-center">
                 <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
@@ -244,11 +244,11 @@ export default function FileViewer({ repoData }: FileViewerProps) {
         )
       case 'notebook':
         return (
-          <div className="flex flex-col items-center justify-center p-4 h-full bg-[#1a1a1a] rounded-lg">
+          <div className="flex flex-col items-center justify-center p-4 h-full bg-card rounded-lg">
             {fileContent ? (
               <NotebookViewer notebookData={fileContent} />
             ) : (
-              <div className="text-zinc-400 flex flex-col items-center">
+              <div className="text-muted-foreground flex flex-col items-center">
                 <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
@@ -259,7 +259,7 @@ export default function FileViewer({ repoData }: FileViewerProps) {
         )
       case 'markdown':
         return (
-          <div className="p-6 prose prose-invert max-w-none bg-[#1a1a1a] rounded-lg">
+          <div className="p-6 prose dark:prose-invert max-w-none bg-card rounded-lg">
             {fileContent ? (
               <div className="markdown-content">
                 <ReactMarkdown components={{
@@ -267,38 +267,38 @@ export default function FileViewer({ repoData }: FileViewerProps) {
                   div: ({ node, className, children, ...props }) => {
                     return <div className={className} {...props}>{children}</div>;
                   },
-                  
+
                   // Handle HTML content in markdown, including video tags
                   p: ({ node, className, children, ...props }) => {
                     const childrenArray = React.Children.toArray(children);
-                    const hasHtmlContent = childrenArray.some(child => 
+                    const hasHtmlContent = childrenArray.some(child =>
                       typeof child === 'string' && (
-                        child.includes('<div') || 
-                        child.includes('<video') || 
+                        child.includes('<div') ||
+                        child.includes('<video') ||
                         child.includes('<source') ||
                         child.includes('<h2')
                       )
                     );
-                    
+
                     if (hasHtmlContent) {
-                      const htmlContent = childrenArray.map(child => 
+                      const htmlContent = childrenArray.map(child =>
                         typeof child === 'string' ? child : ''
                       ).join('');
                       return (
-                        <div 
-                          dangerouslySetInnerHTML={{ __html: htmlContent }} 
+                        <div
+                          dangerouslySetInnerHTML={{ __html: htmlContent }}
                           className="markdown-content"
-                          {...props} 
+                          {...props}
                         />
                       );
                     }
-                    
+
                     return <p className={className} {...props}>{children}</p>;
                   },
                   // Handle video elements directly
                   video: ({ node, ...props }) => (
-                    <video 
-                      controls 
+                    <video
+                      controls
                       className="w-full max-w-3xl mx-auto rounded-lg shadow-lg"
                       {...props}
                     />
@@ -306,7 +306,7 @@ export default function FileViewer({ repoData }: FileViewerProps) {
                 }}>{fileContent}</ReactMarkdown>
               </div>
             ) : (
-              <div className="text-zinc-400 flex flex-col items-center">
+              <div className="text-muted-foreground flex flex-col items-center">
                 <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
@@ -317,8 +317,8 @@ export default function FileViewer({ repoData }: FileViewerProps) {
         )
       default:
         return (
-          <div className="p-4 bg-[#1a1a1a] rounded-lg">
-            <pre className="text-sm font-mono whitespace-pre-wrap overflow-x-auto">
+          <div className="p-4 bg-card rounded-lg">
+            <pre className="text-sm font-mono whitespace-pre-wrap overflow-x-auto text-zinc-900 dark:text-zinc-300">
               <code className="language-text">{fileContent}</code>
             </pre>
           </div>
@@ -327,8 +327,8 @@ export default function FileViewer({ repoData }: FileViewerProps) {
   }
 
   return (
-    <div className="flex flex-col h-full bg-zinc-900">
-      <div className="border-b bg-black p-2 px-4 text-sm font-mono text-zinc-400 rounded-t-lg">{filePath}</div>
+    <div className="flex flex-col h-full bg-background">
+      <div className="border-b bg-muted p-2 px-4 text-sm font-mono text-muted-foreground rounded-t-lg">{filePath}</div>
       <ScrollArea className="flex-1">
         {renderContent()}
       </ScrollArea>

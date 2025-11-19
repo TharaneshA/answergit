@@ -46,7 +46,7 @@ const QuickPromptButton = ({ icon, label, onClick }: QuickPromptButtonProps) => 
   <Button
     variant="outline"
     size="sm"
-    className="flex items-center gap-1.5 bg-zinc-800/50 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 text-xs whitespace-nowrap transition-all"
+    className="flex items-center gap-1.5 hover:text-emerald-400 text-xs whitespace-nowrap transition-all"
     onClick={onClick}
   >
     {icon}
@@ -151,16 +151,16 @@ export default function AiAssistant({ username, repo }: AiAssistantProps) {
   const handleQuickPrompt = (prompt: string) => setInput(prompt)
 
   return (
-    <div className="flex flex-col h-full min-h-0 bg-zinc-950 border-l border-zinc-800/50">
+    <div className="flex flex-col h-full min-h-0 bg-background border-l border-border">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-zinc-800/50 flex items-center justify-between bg-zinc-950/50 backdrop-blur-sm z-10">
+      <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-background/50 backdrop-blur-sm z-10">
         <div className="flex items-center gap-3">
           <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 overflow-hidden">
             <Image src="/logo.png" alt="AnswerGit" width={20} height={20} className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="font-semibold text-sm text-zinc-100">AI Assistant</h2>
-            <div className="flex items-center gap-2 text-xs text-zinc-500">
+            <h2 className="font-semibold text-sm text-foreground">AI Assistant</h2>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -200,13 +200,13 @@ export default function AiAssistant({ username, repo }: AiAssistantProps) {
               className={`flex gap-4 ${message.role === "user" ? "flex-row-reverse" : "flex-row"}`}
             >
               {/* Avatar */}
-              <Avatar className="h-8 w-8 border border-zinc-800 shadow-sm shrink-0">
+              <Avatar className="h-8 w-8 border border-border shadow-sm shrink-0">
                 {message.role === "assistant" ? (
-                  <div className="h-full w-full bg-zinc-900 flex items-center justify-center overflow-hidden">
+                  <div className="h-full w-full bg-muted flex items-center justify-center overflow-hidden">
                     <Image src="/logo.png" alt="AI" width={20} height={20} className="w-5 h-5" />
                   </div>
                 ) : (
-                  <div className="h-full w-full bg-zinc-900 flex items-center justify-center">
+                  <div className="h-full w-full bg-muted flex items-center justify-center">
                     <User className="h-4 w-4 text-blue-400" />
                   </div>
                 )}
@@ -215,21 +215,21 @@ export default function AiAssistant({ username, repo }: AiAssistantProps) {
               {/* Message Bubble */}
               <div className={`flex flex-col max-w-[85%] ${message.role === "user" ? "items-end" : "items-start"}`}>
                 <div className="flex items-center gap-2 mb-1 px-1">
-                  <span className="text-xs font-medium text-zinc-400">
+                  <span className="text-xs font-medium text-muted-foreground">
                     {message.role === "assistant" ? "AnswerGit AI" : "You"}
                   </span>
-                  <span className="text-[10px] text-zinc-600">
+                  <span className="text-[10px] text-muted-foreground">
                     {message.timestamp || (mounted ? new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "")}
                   </span>
                 </div>
 
                 <div
                   className={`rounded-2xl px-5 py-3 shadow-sm text-sm leading-relaxed min-w-0 ${message.role === "user"
-                    ? "bg-emerald-600 text-white rounded-tr-sm"
-                    : "bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-tl-sm"
+                    ? "bg-primary text-primary-foreground rounded-tr-sm"
+                    : "bg-muted border border-border text-black dark:text-zinc-300 rounded-tl-sm"
                     }`}
                 >
-                  <div className="prose prose-invert max-w-none prose-p:leading-relaxed prose-pre:p-0 prose-pre:bg-transparent prose-pre:border-none break-words">
+                  <div className="prose dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:p-0 prose-pre:bg-transparent prose-pre:border-none break-words">
                     <ReactMarkdown
                       components={{
                         code({ node, className, children, ...props }: any) {
@@ -241,7 +241,7 @@ export default function AiAssistant({ username, repo }: AiAssistantProps) {
                               value={String(children).replace(/\n$/, "")}
                             />
                           ) : (
-                            <code className="bg-zinc-800/50 px-1.5 py-0.5 rounded text-emerald-300 font-mono text-xs border border-zinc-700/50" {...props}>
+                            <code className="bg-muted px-1.5 py-0.5 rounded text-primary font-mono text-xs border border-border" {...props}>
                               {children}
                             </code>
                           )
@@ -267,19 +267,19 @@ export default function AiAssistant({ username, repo }: AiAssistantProps) {
                         },
                         table({ children }) {
                           return (
-                            <div className="overflow-x-auto my-4 rounded-lg border border-zinc-700">
+                            <div className="overflow-x-auto my-4 rounded-lg border border-border">
                               <table className="w-full text-left text-sm">{children}</table>
                             </div>
                           )
                         },
                         th({ children }) {
-                          return <th className="bg-zinc-800/50 px-4 py-2 font-medium border-b border-zinc-700">{children}</th>
+                          return <th className="bg-muted px-4 py-2 font-medium border-b border-border">{children}</th>
                         },
                         td({ children }) {
-                          return <td className="px-4 py-2 border-b border-zinc-800 last:border-0">{children}</td>
+                          return <td className="px-4 py-2 border-b border-border last:border-0">{children}</td>
                         },
                         blockquote({ children }) {
-                          return <blockquote className="border-l-2 border-emerald-500 pl-4 italic text-zinc-400 my-2">{children}</blockquote>
+                          return <blockquote className="border-l-2 border-emerald-500 pl-4 italic text-muted-foreground my-2">{children}</blockquote>
                         }
                       }}
                     >
@@ -293,16 +293,16 @@ export default function AiAssistant({ username, repo }: AiAssistantProps) {
 
           {isLoading && (
             <div className="flex gap-4">
-              <Avatar className="h-8 w-8 border border-zinc-800 shadow-sm">
-                <div className="h-full w-full bg-zinc-900 flex items-center justify-center overflow-hidden">
+              <Avatar className="h-8 w-8 border border-border shadow-sm">
+                <div className="h-full w-full bg-muted flex items-center justify-center overflow-hidden">
                   <Image src="/logo.png" alt="AI" width={20} height={20} className="w-5 h-5" />
                 </div>
               </Avatar>
               <div className="flex flex-col items-start">
                 <div className="flex items-center gap-2 mb-1 px-1">
-                  <span className="text-xs font-medium text-zinc-400">AnswerGit AI</span>
+                  <span className="text-xs font-medium text-muted-foreground">AnswerGit AI</span>
                 </div>
-                <div className="bg-zinc-900 border border-zinc-800 rounded-2xl rounded-tl-sm px-5 py-4 shadow-sm">
+                <div className="bg-muted border border-border rounded-2xl rounded-tl-sm px-5 py-4 shadow-sm">
                   <div className="flex items-center gap-1.5">
                     <div className="h-2 w-2 bg-emerald-500/50 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
                     <div className="h-2 w-2 bg-emerald-500/50 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
@@ -317,7 +317,7 @@ export default function AiAssistant({ username, repo }: AiAssistantProps) {
       </ScrollArea>
 
       {/* Input Area */}
-      <div className="p-4 border-t border-zinc-800/50 bg-zinc-950">
+      <div className="p-4 border-t border-border bg-background">
         <div className="max-w-4xl mx-auto space-y-4">
           <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide mask-linear-fade">
             <QuickPromptButton
@@ -350,13 +350,13 @@ export default function AiAssistant({ username, repo }: AiAssistantProps) {
 
           <form onSubmit={handleSubmit} className="relative group">
             <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500/20 to-blue-500/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500"></div>
-            <div className="relative flex gap-2 bg-zinc-900 p-2 rounded-xl border border-zinc-800 shadow-lg focus-within:border-zinc-700 focus-within:ring-1 focus-within:ring-emerald-500/20 transition-all">
+            <div className="relative flex gap-2 bg-muted p-2 rounded-xl border border-border shadow-lg focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20 transition-all">
               <Textarea
                 placeholder="Ask about this repository..."
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="flex-1 min-h-[44px] max-h-[200px] resize-none bg-transparent border-none focus-visible:ring-0 text-sm text-zinc-200 placeholder:text-zinc-500 py-2.5 px-3"
+                className="flex-1 min-h-[44px] max-h-[200px] resize-none bg-transparent border-none focus-visible:ring-0 text-sm text-foreground placeholder:text-muted-foreground py-2.5 px-3"
                 rows={1}
                 disabled={isLoading}
                 ref={inputRef}
@@ -366,8 +366,8 @@ export default function AiAssistant({ username, repo }: AiAssistantProps) {
                 size="icon"
                 disabled={isLoading || !input.trim()}
                 className={`h-[44px] w-[44px] rounded-lg transition-all duration-200 ${input.trim()
-                  ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/20"
-                  : "bg-zinc-800 text-zinc-500 hover:bg-zinc-700"
+                  ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
                   }`}
               >
                 <SendHorizontal className="h-5 w-5" />
@@ -375,7 +375,7 @@ export default function AiAssistant({ username, repo }: AiAssistantProps) {
             </div>
           </form>
           <div className="text-center">
-            <p className="text-[10px] text-zinc-600">
+            <p className="text-[10px] text-muted-foreground">
               AI can make mistakes. Review generated code before use.
             </p>
           </div>

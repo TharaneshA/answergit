@@ -21,15 +21,15 @@ export function CodeBlock({ language, value }: CodeBlockProps) {
     }
 
     return (
-        <div className="relative w-full max-w-full rounded-lg overflow-hidden border border-zinc-700 bg-[#282a36] my-4">
-            <div className="flex items-center justify-between px-4 py-2 bg-zinc-800/50 border-b border-zinc-700">
-                <div className="flex items-center gap-2 text-zinc-400">
+        <div className="relative w-full max-w-full rounded-lg overflow-hidden border border-border bg-zinc-900 dark:bg-[#282a36] my-4">
+            <div className="flex items-center justify-between px-4 py-2 bg-zinc-800 dark:bg-zinc-800/50 border-b border-border">
+                <div className="flex items-center gap-2 text-muted-foreground">
                     <Terminal className="h-4 w-4" />
                     <span className="text-xs font-mono uppercase">{language || "CODE"}</span>
                 </div>
                 <button
                     onClick={copyToClipboard}
-                    className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-100 transition-colors"
+                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
                     {isCopied ? (
                         <>

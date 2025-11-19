@@ -68,15 +68,15 @@ export default function FileExplorer({ repoData }: FileExplorerProps) {
 
   const handleFileClick = async (path: string) => {
     const fileNode = findFileNode(path, repoData.files);
-    
+
     if (!fileNode) {
       console.error(`File node not found: ${path}`);
       return;
     }
-    
+
     // Get current file path from URL
     const currentPath = new URLSearchParams(window.location.search).get('file');
-    
+
     // Only navigate if we're viewing a different file
     if (currentPath !== path) {
       try {
@@ -86,7 +86,7 @@ export default function FileExplorer({ repoData }: FileExplorerProps) {
       }
     }
   }
-  
+
 
   const getFileIcon = (fileName: string) => {
     const extension = fileName.split(".").pop()?.toLowerCase()
@@ -106,7 +106,7 @@ export default function FileExplorer({ repoData }: FileExplorerProps) {
       case "md":
         return <FileText className="h-4 w-4 mr-2 text-purple-400" />
       default:
-        return <FileText className="h-4 w-4 mr-2 text-zinc-400" />
+        return <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
     }
   }
 
@@ -120,7 +120,7 @@ export default function FileExplorer({ repoData }: FileExplorerProps) {
           <div key={node.path} className="select-none">
             <div
               className={cn(
-                "flex items-center py-1.5 px-2 hover:bg-zinc-800/50 rounded cursor-pointer text-sm",
+                "flex items-center py-1.5 px-2 hover:bg-muted rounded cursor-pointer text-sm",
                 level > 0 && "ml-4",
               )}
               onClick={(e) => (node.type === "directory" ? toggleFolder(node.path, e) : handleFileClick(node.path))}
@@ -128,9 +128,9 @@ export default function FileExplorer({ repoData }: FileExplorerProps) {
               {node.type === "directory" ? (
                 <>
                   {isExpanded ? (
-                    <ChevronDown className="h-4 w-4 mr-1 text-zinc-500" />
+                    <ChevronDown className="h-4 w-4 mr-1 text-muted-foreground" />
                   ) : (
-                    <ChevronRight className="h-4 w-4 mr-1 text-zinc-500" />
+                    <ChevronRight className="h-4 w-4 mr-1 text-muted-foreground" />
                   )}
                   <Folder className="h-4 w-4 mr-2 text-blue-400" />
                 </>
@@ -152,22 +152,22 @@ export default function FileExplorer({ repoData }: FileExplorerProps) {
   }
 
   return (
-    <div className="flex flex-col h-full bg-zinc-900">
-      <div className="p-3 border-b border-zinc-800">
+    <div className="flex flex-col h-full bg-background">
+      <div className="p-3 border-b border-border">
         <div className="text-lg mb-3 flex items-center gap-1">
           <Link href={`/${username}`} className="text-emerald-400 hover:text-emerald-300">
             {username}
           </Link>
-          <span className="text-zinc-300">/</span>
-          <Link href={`https://github.com/${username}/${repo}`} className="text-zinc-300 hover:text-emerald-300">
+          <span className="text-foreground">/</span>
+          <Link href={`https://github.com/${username}/${repo}`} className="text-foreground hover:text-emerald-300">
             {repo}
           </Link>
         </div>
         <div className="relative">
-          <Search className="h-3.5 w-3.5 absolute left-2.5 top-2.5 text-zinc-500" />
+          <Search className="h-3.5 w-3.5 absolute left-2.5 top-2.5 text-muted-foreground" />
           <Input
             placeholder="Search files..."
-            className="pl-8 h-8 bg-zinc-800 border-zinc-700 text-sm"
+            className="pl-8 h-8 bg-muted border-border text-sm"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
