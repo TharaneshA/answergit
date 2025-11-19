@@ -116,7 +116,7 @@ Use the AI assistant to:
 - Get code explanations
 - Generate test suggestions
 
-![image](https://github.com/user-attachments/assets/2e5d4f5c-6a71-4031-91b8-e38558ad48eb)
+<img width="1919" height="1073" alt="image" src="https://github.com/user-attachments/assets/88603130-6b83-4962-81cd-976287bb0f2f" />
 
 
 ### File Explorer
@@ -124,7 +124,7 @@ Use the AI assistant to:
 - View file contents
 - Get AI-powered insights for specific files
 
-![image](https://github.com/user-attachments/assets/ad45103f-3287-4d7e-ad7e-5aaa0b82cad9)
+<img width="1919" height="1079" alt="image" src="https://github.com/user-attachments/assets/d8fc6049-e7c1-4c79-8b78-2d3ef0a63af8" />
 
 
 ## 🤝 Contributing
