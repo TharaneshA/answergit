@@ -6,7 +6,7 @@ import { generatePrompt, getRepoDataForPrompt } from '@/lib/prompt-generator';
 import { RedisCacheManager } from '@/lib/redis-cache-manager';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
+const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
 
 // Define interfaces for data structures
 interface ContextStats {
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     
     // Set a longer timeout for Vercel
     const controller = new AbortController();
-    timeoutId = setTimeout(() => controller.abort(), 50000); // 50 second timeout
+    timeoutId = setTimeout(() => controller.abort(), 60000); // 50 second timeout
 
     logger.info(`[${new Date().toISOString()}] Starting query processing for repository: ${repoKey}`, { prefix: 'Query' });
     
