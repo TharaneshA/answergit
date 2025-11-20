@@ -342,6 +342,11 @@ export default function AiAssistant({ username, repo }: AiAssistantProps) {
               onClick={() => handleQuickPrompt("How can I improve this codebase?")}
             />
             <QuickPromptButton
+              icon={<FileQuestion className="h-3.5 w-3.5" />}
+              label="Create README.md"
+              onClick={() => handleQuickPrompt("Create a README.md for this repository")}
+            />
+            <QuickPromptButton
               icon={<Code className="h-3.5 w-3.5" />}
               label="Generate tests"
               onClick={() => handleQuickPrompt("Generate a test for this code")}

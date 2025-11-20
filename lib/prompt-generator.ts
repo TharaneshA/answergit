@@ -23,6 +23,9 @@ export async function generatePrompt(
     .map(message => `${message.role === 'user' ? 'User' : 'Assistant'}: ${message.content}`)
     .join('\n\n');
 
+  // Check if this is a README generation request
+  const isReadmeRequest = query.includes("Create a README.md for this repository");
+
   // Create the prompt with repository data from GitIngest
   const prompt = `
 You are a helpful assistant that can answer questions about the given codebase. You'll analyze both the code structure and content to provide accurate, helpful responses.
@@ -40,6 +43,63 @@ ${content}
 CONVERSATION HISTORY:
 ${formattedHistory}
 
+${isReadmeRequest ? `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️  CRITICAL INSTRUCTION FOR README GENERATION - READ THIS FIRST ⚠️
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+YOU MUST FORMAT YOUR RESPONSE EXACTLY AS SHOWN BELOW:
+
+Your FIRST line MUST be:
+\`\`\`markdown
+
+Then include the README content.
+
+Your LAST line MUST be:
+\`\`\`
+
+DO NOT write ANYTHING before \`\`\`markdown
+DO NOT write ANYTHING after the closing \`\`\`
+DO NOT explain what you're doing
+DO NOT add text like "Here's a README for you"
+DO NOT add text like "Feel free to modify this"
+
+WRONG EXAMPLE (DO NOT DO THIS):
+Here's a professional README for your repository:
+
+# AnswerGit
+...
+
+CORRECT EXAMPLE (DO THIS EXACTLY):
+\`\`\`markdown
+# AnswerGit
+
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+...
+\`\`\`
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+README CONTENT REQUIREMENTS:
+1. **Professional Tone**: Technical and professional. NO EMOJIS.
+2. **Required Sections** (adapt based on project type):
+   - Title with one-line description
+   - Badges (shields.io format: License, Build Status, Language, Version)
+   - Detailed description of purpose and key features
+   - Tech Stack
+   - Installation instructions
+   - Usage examples
+   - Project Structure (optional for complex repos)
+   - Contributing guidelines (if applicable)
+   - License
+3. **Adaptability**: 
+   - Libraries: Focus on API docs and usage examples
+   - Web apps: Focus on setup, deployment, environment config
+   - Tools/CLIs: Focus on command-line usage
+4. Use proper markdown syntax (headers, code blocks, lists, links)
+
+REMINDER: Start with \`\`\`markdown and end with \`\`\` - NOTHING ELSE OUTSIDE THESE MARKERS!
+` : `
 INSTRUCTIONS:
 1. First analyze the query to understand what the user is asking about the codebase.
 2. Match your response length and detail to the specificity of the query:
@@ -56,6 +116,7 @@ INSTRUCTIONS:
    - Include links to external sources when relevant
 6. If the query is unclear or ambiguous, ask clarifying questions.
 7. For architecture-related queries, include sequence diagrams in mermaid format.
+`}
 
 FORMAT GUIDELINES:
 - Use markdown formatting for clarity
@@ -139,30 +200,30 @@ export async function getRepoDataForPrompt(username: string, repo: string): Prom
 
     // If not in cache, use GitIngest to fetch fresh data
     logger.info(`Retrieving repository data for ${username}/${repo}`, { prefix: 'GitIngest' });
-    
+
     return new Promise((resolve, reject) => {
       // Path to the Python bridge script
       const scriptPath = path.join(process.cwd(), 'lib', 'gitingest_bridge.py');
-      
+
       // Spawn Python process for fresh data
       const pythonProcess = spawn('python', [
         scriptPath,
         '--username', username,
         '--repo', repo
       ]);
-      
+
       let dataString = '';
-      
+
       // Collect data from script
       pythonProcess.stdout.on('data', (data: Buffer) => {
         dataString += data.toString();
       });
-      
+
       // Handle errors
       pythonProcess.stderr.on('data', (data: Buffer) => {
         logger.error(`Process error: ${data}`, { prefix: 'GitIngest' });
       });
-      
+
       // Process has completed
       pythonProcess.on('close', async (code: number) => {
         if (code !== 0) {
@@ -175,7 +236,7 @@ export async function getRepoDataForPrompt(username: string, repo: string): Prom
           });
           return;
         }
-        
+
         try {
           const result = JSON.parse(dataString);
           if (result.success) {
