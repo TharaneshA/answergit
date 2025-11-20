@@ -32,16 +32,16 @@ export async function POST(req: Request) {
   try {
     const { username, repo, query, filePath, fetchOnlyCurrentFile = false, history = [] } = await req.json();
     const repoKey = `${username}/${repo}`;
-    
+
     // Set a longer timeout for Vercel
     const controller = new AbortController();
     timeoutId = setTimeout(() => controller.abort(), 60000); // 50 second timeout
 
     logger.info(`[${new Date().toISOString()}] Starting query processing for repository: ${repoKey}`, { prefix: 'Query' });
-    
+
     let prompt = '';
     let contextStats: ContextStats = { files: 0, totalChars: 0 };
-    
+
     // Start context preparation
     logger.context.start();
 
@@ -58,13 +58,13 @@ FILE: ${filePath}
 ${fileContent}
 
 Provide a detailed, technical response that directly addresses the user's query about this specific file.`;
-      
+
       contextStats.files = 1;
       contextStats.totalChars = fileContent.length;
     } else {
       // For general queries, use GitIngest data
       logger.info(`Collecting repository data for ${repoKey} using GitIngest...`, { prefix: 'Query' });
-      
+
       try {
         // Skip background content loading if we have cached data
         const hasCachedData = await RedisCacheManager.hasCache(username, repo);
@@ -79,20 +79,24 @@ Provide a detailed, technical response that directly addresses the user's query 
             logger.error('Error triggering background content loading: ' + (error instanceof Error ? error.message : 'Unknown error'));
           }
         }
-        
+
         // Get repository data from GitIngest
         let repoData: RepoData | null = null;
-        
+
         // Check Redis cache first
         try {
           repoData = await RedisCacheManager.getFromCache(username, repo);
           if (repoData) {
             logger.info(`Using cached data for ${repoKey}`, { prefix: 'Context' });
-            
+
             // Calculate context stats from cached data
-            const treeLines = repoData.tree.split('\n').length;
+            const treeLines = repoData.tree.split('\n');
             const contentChars = repoData.content.length;
-            
+
+            logger.info(`Cached Tree Structure (${treeLines.length} items):`, { prefix: 'Context' });
+            // Log first 20 lines of tree to avoid spamming
+            logger.info(treeLines.slice(0, 20).join('\n') + (treeLines.length > 20 ? '\n... (truncated)' : ''), { prefix: 'Context' });
+
             // Generate prompt using the cached data
             prompt = await generatePrompt(
               query,
@@ -100,10 +104,10 @@ Provide a detailed, technical response that directly addresses the user's query 
               repoData.tree,
               repoData.content
             );
-            
-            contextStats.files = treeLines; // Approximation based on tree lines
+
+            contextStats.files = treeLines.length;
             contextStats.totalChars = contentChars;
-            
+
             logger.info(`Generated prompt using cached data for ${repoKey}`, { prefix: 'Prompt' });
           }
         } catch (error) {
@@ -113,10 +117,10 @@ Provide a detailed, technical response that directly addresses the user's query 
         if (!repoData) {
           // Existing GitIngest processing logic
           const gitIngestData: GitIngestData = await getRepoDataForPrompt(username, repo);
-          
+
           if (gitIngestData && !gitIngestData.error) {
             logger.info(`Retrieved GitIngest data for repository: ${repoKey}`, { prefix: 'GitIngest' });
-            
+
             // Calculate context stats from repo data
             const treeLines = gitIngestData.tree.split('\n').length;
             const contentChars = gitIngestData.content.length;
@@ -128,10 +132,10 @@ Provide a detailed, technical response that directly addresses the user's query 
               gitIngestData.tree,
               gitIngestData.content
             );
-            
+
             contextStats.files = treeLines; // Approximation based on tree lines
             contextStats.totalChars = contentChars;
-            
+
             logger.info(`Generated prompt for query using GitIngest data`, { prefix: 'Prompt' });
           } else {
             // Fallback if GitIngest data is not available
@@ -176,12 +180,12 @@ ${userQueryPrompt}Provide an insightful, technical response that directly addres
     clearTimeout(timeoutId);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     const isTimeout = errorMessage.includes('aborted') || errorMessage.includes('timeout');
-    
+
     logger.error(`Error processing Gemini request: ${errorMessage}`);
     return NextResponse.json(
       {
         success: false,
-        error: isTimeout ? 
+        error: isTimeout ?
           'Request timed out. Please try with a smaller repository or specific file query.' :
           `Failed to process request: ${errorMessage}`
       },

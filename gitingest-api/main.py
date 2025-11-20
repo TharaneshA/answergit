@@ -13,6 +13,9 @@ from typing import Optional
 from gitingest import ingest_async
 from uvicorn.main import logger
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+
 app = FastAPI()
 
 # Enable CORS to allow cross-origin requests from the frontend
@@ -39,6 +42,13 @@ class IngestRequest(BaseModel):
 async def fetch_github_content(github_link: str, max_file_size: int) -> dict:
     try:
         summary, tree, content = await ingest_async(source=github_link, max_file_size=max_file_size)
+        
+        # Log the tree structure to see what files were ingested
+        logging.info(f"Ingestion complete for {github_link}")
+        logging.info(f"Summary: {summary}")
+        logging.info(f"Tree structure:\n{tree}")
+        logging.info(f"Total content length: {len(content)} characters")
+
         return {
             "summary": summary,
             "tree": tree,
