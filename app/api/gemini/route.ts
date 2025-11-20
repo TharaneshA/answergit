@@ -35,7 +35,7 @@ export async function POST(req: Request) {
 
     // Set a longer timeout for Vercel
     const controller = new AbortController();
-    timeoutId = setTimeout(() => controller.abort(), 60000); // 50 second timeout
+    timeoutId = setTimeout(() => controller.abort(), 120000); // 120 second timeout
 
     logger.info(`[${new Date().toISOString()}] Starting query processing for repository: ${repoKey}`, { prefix: 'Query' });
 

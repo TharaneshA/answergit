@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
         logger.info(`Starting data collection for repository: ${repoUrl} using GitIngest`, { prefix: 'GitIngest' });
 
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+        const timeout = setTimeout(() => controller.abort(), 120000); // 120 second timeout
 
         const response = await fetch(`${apiUrl}/ingest/`, {
             method: 'POST',
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
             tokens: result.summary?.match(/Estimated tokens: (\d+)/)?.at(1) || 0,
             chars: result.content?.length || 0
         };
-        
+
         logger.info(`Repository metrics - Files: ${metrics.files}, Tokens: ${metrics.tokens}, Characters: ${metrics.chars}`, { prefix: 'GitIngest' });
 
         if (!result || typeof result !== 'object') {
@@ -95,8 +95,8 @@ export async function POST(req: NextRequest) {
                     },
                     { status: 404 }
                 );
-            }  else if (result.error === 'error:repo_too_large') {
-               logger.warn(`Repository too large: ${repoUrl}`, { prefix: 'GitIngest' });
+            } else if (result.error === 'error:repo_too_large') {
+                logger.warn(`Repository too large: ${repoUrl}`, { prefix: 'GitIngest' });
                 errorMessage = `Repository ${repoUrl} is too large to process. Please try a smaller repository.`;
                 return NextResponse.json(
                     {
