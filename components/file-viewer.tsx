@@ -10,6 +10,10 @@ import dynamic from 'next/dynamic'
 import NotebookViewer from './notebook-viewer'
 import "../styles/markdown.css"
 import * as React from "react"
+import rehypeRaw from "rehype-raw"
+import remarkGfm from "remark-gfm"
+import { Button } from "@/components/ui/button"
+import { ZoomIn, ZoomOut, RotateCcw } from "lucide-react"
 
 // Dynamically import PDF components with no SSR
 const PDFViewer = dynamic(
@@ -70,6 +74,7 @@ export default function FileViewer({ repoData }: FileViewerProps) {
   const [error, setError] = useState<string | null>(null);
   const [fileType, setFileType] = useState<'image' | 'pdf' | 'markdown' | 'text' | 'notebook'>('text');
   const [base64Content, setBase64Content] = useState<string | null>(null);
+  const [zoomLevel, setZoomLevel] = useState(1);
 
   useEffect(() => {
     if (!filePath) {
@@ -81,6 +86,7 @@ export default function FileViewer({ repoData }: FileViewerProps) {
     // Reset states
     setIsLoading(true)
     setError(null)
+    setZoomLevel(1)
 
     // Determine file type based on extension
     setFileType(getFileType(filePath))
@@ -129,7 +135,7 @@ export default function FileViewer({ repoData }: FileViewerProps) {
         setFileContent(content)
 
         // For image files, we need to handle base64 encoding
-        if (fileType === 'image') {
+        if (getFileType(filePath) === 'image') {
           // Check if content is already base64 encoded
           if (content.startsWith('data:image')) {
             setBase64Content(content)
@@ -137,9 +143,10 @@ export default function FileViewer({ repoData }: FileViewerProps) {
             // Convert to base64 if needed
             try {
               // For binary content, it should already be base64 encoded from the API
-              // Just add the proper data URL prefix
+              // Just add the proper data URL prefix and strip newlines
               const extension = filePath.split('.').pop()?.toLowerCase()
-              setBase64Content(`data:image/${extension};base64,${content}`)
+              const cleanContent = content.replace(/\s/g, '');
+              setBase64Content(`data:image/${extension};base64,${cleanContent}`)
             } catch (e) {
               console.error('Error converting image to base64:', e)
               setError('Failed to display image')
@@ -156,6 +163,10 @@ export default function FileViewer({ repoData }: FileViewerProps) {
 
     fetchFileContent()
   }, [filePath, repoData?.files, pathname, username, repo])
+
+  const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 0.25, 3));
+  const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 0.25, 0.5));
+  const handleResetZoom = () => setZoomLevel(1);
 
   if (!filePath) {
     return (
@@ -213,31 +224,49 @@ export default function FileViewer({ repoData }: FileViewerProps) {
     switch (fileType) {
       case 'image':
         return (
-          <div className="flex items-center justify-center p-4 h-full bg-card rounded-lg">
-            {base64Content ? (
-              <div className="relative group cursor-zoom-in transition-transform hover:scale-105">
-                <img
-                  src={base64Content}
-                  alt="File content"
-                  className="max-w-full max-h-[80vh] object-contain"
-                />
-              </div>
-            ) : (
-              <div className="text-red-400">Unable to load image</div>
-            )}
+          <div className="flex flex-col h-full">
+            <div className="flex items-center justify-end gap-2 p-2 border-b border-border bg-muted/30">
+              <Button variant="ghost" size="icon" onClick={handleZoomOut} disabled={zoomLevel <= 0.5}>
+                <ZoomOut className="h-4 w-4" />
+              </Button>
+              <span className="text-xs font-mono w-12 text-center">{Math.round(zoomLevel * 100)}%</span>
+              <Button variant="ghost" size="icon" onClick={handleZoomIn} disabled={zoomLevel >= 3}>
+                <ZoomIn className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={handleResetZoom}>
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex-1 flex items-center justify-center p-4 bg-zinc-100 dark:bg-zinc-900 overflow-hidden">
+              {base64Content ? (
+                <div
+                  className="relative transition-transform duration-200 ease-out"
+                  style={{ transform: `scale(${zoomLevel})` }}
+                >
+                  {/* Checkerboard background for transparency */}
+                  <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
+                  <img
+                    src={base64Content}
+                    alt="File content"
+                    className="max-w-full max-h-[80vh] object-contain shadow-lg rounded-sm"
+                  />
+                </div>
+              ) : (
+                <div className="text-red-400">Unable to load image</div>
+              )}
+            </div>
           </div>
         );
       case 'pdf':
         return (
-          <div className="flex flex-col items-center justify-center p-4 h-full bg-card rounded-lg">
+          <div className="flex flex-col h-full bg-zinc-100 dark:bg-zinc-900">
             {fileContent ? (
-              <PDFViewer pdfData={fileContent.startsWith('data:application/pdf;base64,') ? fileContent : `data:application/pdf;base64,${fileContent}`} />
+              <PDFViewer pdfData={fileContent.startsWith('data:application/pdf;base64,') ? fileContent : `data:application/pdf;base64,${fileContent.replace(/\s/g, '')}`} />
             ) : (
-              <div className="text-muted-foreground flex flex-col items-center">
-                <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <p>Unable to display PDF</p>
+              <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                <div className="flex flex-col items-center">
+                  <p>Unable to display PDF</p>
+                </div>
               </div>
             )}
           </div>
@@ -249,9 +278,6 @@ export default function FileViewer({ repoData }: FileViewerProps) {
               <NotebookViewer notebookData={fileContent} />
             ) : (
               <div className="text-muted-foreground flex flex-col items-center">
-                <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
                 <p>Unable to display notebook</p>
               </div>
             )}
@@ -259,57 +285,37 @@ export default function FileViewer({ repoData }: FileViewerProps) {
         )
       case 'markdown':
         return (
-          <div className="p-6 prose dark:prose-invert max-w-none bg-card rounded-lg">
+          <div className="p-8 prose dark:prose-invert max-w-none bg-card rounded-lg">
             {fileContent ? (
               <div className="markdown-content">
-                <ReactMarkdown components={{
-                  // Handle div elements with alignment and other HTML attributes
-                  div: ({ node, className, children, ...props }) => {
-                    return <div className={className} {...props}>{children}</div>;
-                  },
-
-                  // Handle HTML content in markdown, including video tags
-                  p: ({ node, className, children, ...props }) => {
-                    const childrenArray = React.Children.toArray(children);
-                    const hasHtmlContent = childrenArray.some(child =>
-                      typeof child === 'string' && (
-                        child.includes('<div') ||
-                        child.includes('<video') ||
-                        child.includes('<source') ||
-                        child.includes('<h2')
-                      )
-                    );
-
-                    if (hasHtmlContent) {
-                      const htmlContent = childrenArray.map(child =>
-                        typeof child === 'string' ? child : ''
-                      ).join('');
-                      return (
-                        <div
-                          dangerouslySetInnerHTML={{ __html: htmlContent }}
-                          className="markdown-content"
-                          {...props}
-                        />
-                      );
-                    }
-
-                    return <p className={className} {...props}>{children}</p>;
-                  },
-                  // Handle video elements directly
-                  video: ({ node, ...props }) => (
-                    <video
-                      controls
-                      className="w-full max-w-3xl mx-auto rounded-lg shadow-lg"
-                      {...props}
-                    />
-                  )
-                }}>{fileContent}</ReactMarkdown>
+                <ReactMarkdown
+                  rehypePlugins={[rehypeRaw]}
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    // Handle video elements directly
+                    video: ({ node, ...props }) => (
+                      <video
+                        controls
+                        className="w-full max-w-3xl mx-auto rounded-lg shadow-lg my-4"
+                        {...props}
+                      />
+                    ),
+                    img: ({ node, ...props }) => (
+                      <img
+                        className="rounded-lg shadow-sm max-w-full h-auto"
+                        {...props}
+                      />
+                    ),
+                    a: ({ node, ...props }) => (
+                      <a className="text-emerald-500 hover:underline" {...props} />
+                    )
+                  }}
+                >
+                  {fileContent}
+                </ReactMarkdown>
               </div>
             ) : (
               <div className="text-muted-foreground flex flex-col items-center">
-                <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
                 <p>No content to display</p>
               </div>
             )}
@@ -328,7 +334,10 @@ export default function FileViewer({ repoData }: FileViewerProps) {
 
   return (
     <div className="flex flex-col h-full bg-background">
-      <div className="border-b bg-muted p-2 px-4 text-sm font-mono text-muted-foreground rounded-t-lg">{filePath}</div>
+      <div className="border-b bg-muted p-2 px-4 text-sm font-mono text-muted-foreground rounded-t-lg flex justify-between items-center">
+        <span>{filePath}</span>
+        <span className="text-xs opacity-70 uppercase">{fileType}</span>
+      </div>
       <ScrollArea className="flex-1">
         {renderContent()}
       </ScrollArea>

@@ -2,9 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area'
+import { ScrollBar } from '@/components/ui/scroll-area'
 import { Card } from '@/components/ui/card'
 import ReactMarkdown from 'react-markdown'
+import rehypeRaw from 'rehype-raw'
+import remarkGfm from 'remark-gfm'
 
 interface NotebookViewerProps {
   notebookData: string
@@ -12,7 +15,7 @@ interface NotebookViewerProps {
 
 interface NotebookCell {
   cell_type: 'code' | 'markdown'
-  source: string[]
+  source: string[] | string
   outputs?: Array<{
     output_type: string
     text?: string[]
@@ -42,72 +45,17 @@ export default function NotebookViewer({ notebookData }: NotebookViewerProps) {
           throw new Error('Invalid input: Notebook data must be a non-empty string')
         }
 
-        // Log the first part of the data for debugging
-        console.log('Notebook data preview:', data.slice(0, 200))
+        // Check for truncation
+        if (data.includes('[Content truncated due to size limitations]')) {
+          throw new Error('Notebook content is too large and has been truncated. Unable to render.')
+        }
 
         let parsed;
         try {
-          // First attempt to parse as-is
-          const trimmedData = data.trim()
-          if (!trimmedData.startsWith('{') || !trimmedData.endsWith('}')) {
-            throw new Error('Invalid JSON structure: Must be a JSON object')
-          }
-          parsed = JSON.parse(trimmedData)
-        } catch (initialError) {
-          console.log('Initial parse failed, attempting data cleanup...')
-          
-          // Pre-process the data in chunks to handle large files
-          const chunkSize = 100000; // Process 100KB at a time
-          let sanitizedData = '';
-          
-          for (let i = 0; i < data.length; i += chunkSize) {
-            const chunk = data.slice(i, i + chunkSize)
-              // Remove all control characters except newlines and carriage returns
-              .replace(/[\x00-\x09\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, '')
-              // Remove Unicode BOMs
-              .replace(/[\ufeff\ufffe\ufff9-\uffff]/g, '')
-              // Normalize line endings
-              .replace(/\r\n|\r/g, '\n')
-              // Handle escaped characters
-              .replace(/\\u0000/g, '') // Remove null bytes
-              .replace(/\\([^"\\])/g, '$1') // Unescape non-quote backslashes
-              .replace(/\\\\(?=["\\])/g, '\\') // Fix double escaped quotes/backslashes
-              // Handle potential JSON string issues
-              .replace(/\\["]/g, '"') // Fix escaped quotes
-              .replace(/[\u2018\u2019]/g, "'") // Replace smart quotes
-              .replace(/[\u201C\u201D]/g, '"') // Replace smart double quotes
-              // Fix common JSON syntax errors
-              .replace(/,\s*([\]\}])/g, '$1') // Remove trailing commas
-              .replace(/([\{\[,])\s*,/g, '$1') // Remove empty elements
-              .replace(/,\s*,/g, ',') // Remove consecutive commas
-              // Fix missing commas between elements
-              .replace(/}\s*{/g, '},{') // Fix missing commas between objects
-              .replace(/]\s*\[/g, '],[') // Fix missing commas between arrays
-              .replace(/}\s*\[/g, '},[')
-              .replace(/]\s*{/g, '],{')
-              // Fix potential JSON syntax errors
-              .replace(/(["\d\}\]])\s*(["\{\[])/g, '$1,$2') // Add missing commas between values
-              
-            sanitizedData += chunk;
-          }
-          
-          try {
-            // Try parsing with sanitized data
-            parsed = JSON.parse(sanitizedData)
-          } catch (parseError: unknown) {
-            console.error('JSON parse error after sanitization:', parseError)
-            // Try one more time with additional cleanup
-            try {
-              sanitizedData = sanitizedData
-                .replace(/,\s*([\]\}])/g, '$1') // Remove trailing commas
-                .replace(/\s+/g, ' ') // Normalize whitespace
-                .trim()
-              parsed = JSON.parse(sanitizedData)
-            } catch (finalError: unknown) {
-              console.error('Final parse attempt failed:', finalError)
-              throw new Error(`Failed to parse notebook: ${finalError instanceof Error ? finalError.message : 'Unknown error'}. The file may be corrupted or contain invalid JSON.`)
-            }
-          }
+          parsed = JSON.parse(data)
+        } catch (e) {
+          console.error('JSON parse error:', e)
+          throw new Error('Failed to parse notebook JSON. The file may be corrupted or invalid.')
         }
 
         // Validate required notebook properties
@@ -119,17 +67,10 @@ export default function NotebookViewer({ notebookData }: NotebookViewerProps) {
           throw new Error('Invalid notebook format: Missing cells array')
         }
 
-        if (!parsed.nbformat || typeof parsed.nbformat !== 'number') {
-          throw new Error('Invalid notebook format: Missing or invalid nbformat')
-        }
-
         // Validate cell structure
         for (const cell of parsed.cells) {
-          if (!cell.cell_type || !Array.isArray(cell.source)) {
-            throw new Error('Invalid cell format: Missing required properties')
-          }
-          if (!['code', 'markdown'].includes(cell.cell_type)) {
-            throw new Error(`Invalid cell type: ${cell.cell_type}`)
+          if (!cell.cell_type || (!Array.isArray(cell.source) && typeof cell.source !== 'string')) {
+            console.warn('Invalid cell found:', cell)
           }
         }
 
@@ -137,7 +78,7 @@ export default function NotebookViewer({ notebookData }: NotebookViewerProps) {
       } catch (e) {
         console.error('Notebook parsing error:', e)
         setError(
-          `Failed to parse notebook: ${e instanceof Error ? e.message : 'Invalid format'}. Please ensure the notebook file is valid.`
+          e instanceof Error ? e.message : 'Failed to parse notebook'
         )
         return null
       }
@@ -148,7 +89,7 @@ export default function NotebookViewer({ notebookData }: NotebookViewerProps) {
 
   if (error) {
     return (
-      <div className="text-red-400 flex items-center justify-center h-full">
+      <div className="text-red-400 flex items-center justify-center h-full p-4 text-center">
         {error}
       </div>
     )
@@ -163,47 +104,74 @@ export default function NotebookViewer({ notebookData }: NotebookViewerProps) {
   }
 
   return (
-    <ScrollArea className="h-full w-full">
-      <div className="flex flex-col gap-4 p-4">
-        {notebook.cells.map((cell, index) => (
-          <Card key={index} className="p-4">
-            {cell.cell_type === 'markdown' && (
-              <div className="prose prose-invert max-w-none">
-                <ReactMarkdown>{cell.source.join('')}</ReactMarkdown>
-              </div>
-            )}
-            {cell.cell_type === 'code' && (
-              <div className="font-mono">
-                <pre className="bg-zinc-900 p-2 rounded">
-                  <code>{cell.source.join('')}</code>
-                </pre>
-                {cell.outputs?.map((output, outputIndex) => (
-                  <div key={outputIndex} className="mt-2">
-                    {output.text && (
-                      <pre className="bg-zinc-800 p-2 rounded text-sm">
-                        {output.text.join('')}
-                      </pre>
-                    )}
-                    {output.data?.['text/html'] && (
-                      <div
-                        dangerouslySetInnerHTML={{
-                          __html: output.data['text/html'].join('')
-                        }}
-                        className="bg-zinc-800 p-2 rounded"
-                      />
-                    )}
-                    {output.data?.['text/plain'] && (
-                      <pre className="bg-zinc-800 p-2 rounded text-sm">
-                        {output.data['text/plain'].join('')}
-                      </pre>
-                    )}
+    <ScrollAreaPrimitive.Root className="relative h-full w-full overflow-hidden">
+      <ScrollAreaPrimitive.Viewport className="h-full w-full rounded-[inherit]">
+        <div className="flex flex-col gap-4 p-4 min-w-max">
+          {notebook.cells.map((cell, index) => (
+            <Card key={index} className="p-4 overflow-hidden bg-zinc-900 border-zinc-800 max-w-[calc(100vw-2rem)] md:max-w-none">
+              {cell.cell_type === 'markdown' ? (
+                <div className="prose prose-invert max-w-none">
+                  <ReactMarkdown rehypePlugins={[rehypeRaw]} remarkPlugins={[remarkGfm]}>
+                    {Array.isArray(cell.source) ? cell.source.join('') : cell.source}
+                  </ReactMarkdown>
+                </div>
+              ) : cell.cell_type === 'code' ? (
+                <div className="flex flex-col gap-2">
+                  <div className="bg-zinc-950 p-3 rounded-md overflow-x-auto">
+                    <pre className="font-mono text-sm text-zinc-300">
+                      <code>{Array.isArray(cell.source) ? cell.source.join('') : cell.source}</code>
+                    </pre>
                   </div>
-                ))}
-              </div>
-            )}
-          </Card>
-        ))}
-      </div>
-    </ScrollArea>
+                  {cell.outputs && cell.outputs.length > 0 && (
+                    <div className="mt-2 space-y-2">
+                      {cell.outputs.map((output, outIndex) => {
+                        // Handle stream output (stdout/stderr)
+                        if (output.output_type === 'stream' && output.text) {
+                          return (
+                            <pre key={outIndex} className="font-mono text-sm text-zinc-400 whitespace-pre-wrap">
+                              {Array.isArray(output.text) ? output.text.join('') : output.text}
+                            </pre>
+                          )
+                        }
+                        // Handle execute_result or display_data
+                        if ((output.output_type === 'execute_result' || output.output_type === 'display_data') && output.data) {
+                          if (output.data['text/html']) {
+                            return (
+                              <div
+                                key={outIndex}
+                                className="prose prose-invert max-w-none overflow-x-auto bg-white/5 p-2 rounded"
+                                dangerouslySetInnerHTML={{
+                                  __html: Array.isArray(output.data['text/html'])
+                                    ? output.data['text/html'].join('')
+                                    : output.data['text/html'] || ''
+                                }}
+                              />
+                            )
+                          }
+                          if (output.data['text/plain']) {
+                            return (
+                              <pre key={outIndex} className="font-mono text-sm text-zinc-400 whitespace-pre-wrap">
+                                {Array.isArray(output.data['text/plain'])
+                                  ? output.data['text/plain'].join('')
+                                  : output.data['text/plain']}
+                              </pre>
+                            )
+                          }
+                        }
+                        return null
+                      })}
+                    </div>
+                  )}
+                </div>
+              ) : null}
+            </Card>
+          ))}
+        </div>
+      </ScrollAreaPrimitive.Viewport>
+      <ScrollBar orientation="vertical" />
+      <ScrollBar orientation="horizontal" className="top-0 bottom-auto border-b border-zinc-800/50" />
+      <div className="absolute top-0 right-0 h-full w-16 bg-gradient-to-l from-zinc-950 to-transparent pointer-events-none" />
+      <ScrollAreaPrimitive.Corner />
+    </ScrollAreaPrimitive.Root>
   )
 }

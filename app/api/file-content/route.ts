@@ -5,7 +5,7 @@ import { Octokit } from "@octokit/rest";
 const fileCache = new Map();
 const CACHE_EXPIRY = 10 * 60 * 1000; // 10 minutes (increased from 5)
 const MAX_CACHE_SIZE = 100; // Maximum number of files to cache
-const MAX_CONTENT_LENGTH = 500000; // Increased max content size for larger files
+const MAX_CONTENT_LENGTH = 50 * 1024 * 1024; // Increased max content size to 50MB
 const RETRY_ATTEMPTS = 3; // Number of retry attempts for failed requests
 const RETRY_DELAY = 1000; // Delay between retries in milliseconds
 
@@ -15,7 +15,7 @@ function pruneCache() {
     // Find the oldest entries and remove them
     const entries = Array.from(fileCache.entries());
     entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
-    
+
     // Remove oldest 20% of entries
     const entriesToRemove = Math.ceil(MAX_CACHE_SIZE * 0.2);
     entries.slice(0, entriesToRemove).forEach(([key]) => {
@@ -30,7 +30,7 @@ async function fetchWithRetry(fn: () => Promise<any>, attempts = RETRY_ATTEMPTS)
     return await fn();
   } catch (error) {
     if (attempts <= 1) throw error;
-    
+
     // Wait before retrying
     await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
     return fetchWithRetry(fn, attempts - 1);
@@ -62,10 +62,10 @@ export async function GET(request: NextRequest) {
         content,
         timestamp: Date.now(), // Update access time
       });
-      
+
       return new Response(JSON.stringify(content), {
         status: 200,
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
           "Cache-Control": "public, max-age=600", // Allow browser caching for 10 minutes
         },
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
     }) as Awaited<ReturnType<typeof octokit.repos.getContent>>;
 
     let content: string;
-    
+
     // Handle raw format response (especially for markdown files)
     if (response && 'data' in response && typeof response.data === 'string') {
       content = response.data;
@@ -119,7 +119,7 @@ export async function GET(request: NextRequest) {
       // Check if file is binary (images, PDFs, etc.)
       const extension = path.split('.').pop()?.toLowerCase() || '';
       const isBinaryFile = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp', 'ico', 'pdf'].includes(extension);
-      
+
       if (isBinaryFile) {
         // For binary files, keep the base64 encoding
         content = response.data.content;
@@ -133,35 +133,35 @@ export async function GET(request: NextRequest) {
         headers: { "Content-Type": "application/json" },
       });
     }
-    
+
     // Limit content size to prevent memory issues
-    const trimmedContent = content.length > MAX_CONTENT_LENGTH 
-      ? content.slice(0, MAX_CONTENT_LENGTH) + "\n\n[Content truncated due to size limitations]" 
+    const trimmedContent = content.length > MAX_CONTENT_LENGTH
+      ? content.slice(0, MAX_CONTENT_LENGTH) + "\n\n[Content truncated due to size limitations]"
       : content;
-    
+
     // Cache the content
     fileCache.set(cacheKey, {
       content: trimmedContent,
       timestamp: Date.now(),
     });
-    
+
     // Prune cache if it exceeds size limit
     pruneCache();
 
     return new Response(JSON.stringify(trimmedContent), {
       status: 200,
-      headers: { 
+      headers: {
         "Content-Type": "application/json",
         "Cache-Control": "public, max-age=600", // Allow browser caching
       },
     });
   } catch (error) {
     console.error("Error fetching file content:", error);
-    
+
     // Provide more specific error messages
     let errorMessage = "Failed to fetch file content";
     let statusCode = 500;
-    
+
     if (error instanceof Error) {
       if (error.message.includes('timeout')) {
         errorMessage = "Request timed out while fetching file content";
@@ -173,7 +173,7 @@ export async function GET(request: NextRequest) {
         statusCode = 404;
       }
     }
-    
+
     return new Response(JSON.stringify({ error: errorMessage }), {
       status: statusCode,
       headers: { "Content-Type": "application/json" },

@@ -30,7 +30,7 @@ app.add_middleware(
 
 class IngestRequest(BaseModel):
     github_link: str
-    max_file_size: int = 10 * 1024 * 1024  # default to 10MB
+    max_file_size: int = 50 * 1024 * 1024  # default to 50MB
 
     @validator('github_link')
     def validate_github_link(cls, v):

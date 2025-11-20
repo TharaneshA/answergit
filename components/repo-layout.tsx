@@ -33,7 +33,7 @@ export default function RepoLayout({ repoData, username, repo }: RepoLayoutProps
                     onExpand={() => setIsLeftCollapsed(false)}
                     className={cn(isLeftCollapsed && "min-w-[50px] transition-all duration-300 ease-in-out")}
                 >
-                    <div className="h-full flex flex-col border-r border-border">
+                    <div className="h-full flex flex-col border-r border-border shadow-[4px_0_24px_-2px_rgba(0,0,0,0.1)] z-10 relative">
                         <Suspense
                             fallback={
                                 <div className="p-4">
@@ -50,7 +50,7 @@ export default function RepoLayout({ repoData, username, repo }: RepoLayoutProps
 
                 {/* Middle - File Viewer */}
                 <ResizablePanel defaultSize={50} minSize={30}>
-                    <div className="flex flex-col h-full min-w-0">
+                    <div className="flex flex-col h-full min-w-0 shadow-[4px_0_24px_-2px_rgba(0,0,0,0.1)] z-10 relative">
                         <RepoAnalyzer username={username} repo={repo} />
                         <div className="flex-1 overflow-hidden border-r border-border">
                             <Suspense
