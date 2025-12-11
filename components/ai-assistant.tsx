@@ -182,6 +182,16 @@ export default function AiAssistant({ username, repo }: AiAssistantProps) {
                   </a>
                 </>
               )}
+              <span>•</span>
+              <a
+                href="https://buymeacoffee.com/tharanesh"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 hover:text-yellow-400 transition-colors"
+              >
+                <span>☕</span>
+                Buy me a coffee
+              </a>
             </div>
           </div>
         </div>
