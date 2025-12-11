@@ -4,6 +4,7 @@ import { fetchFileContent } from "@/lib/github";
 import { logger } from '@/lib/logger';
 import { generatePrompt, getRepoDataForPrompt } from '@/lib/prompt-generator';
 import { RedisCacheManager } from '@/lib/redis-cache-manager';
+import { RateLimiter } from '@/lib/rate-limiter';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
@@ -28,8 +29,40 @@ interface ConversationMessage {
 
 let timeoutId: string | number | NodeJS.Timeout | undefined;
 
+// Helper to get client IP
+function getClientIP(req: Request): string {
+  const forwarded = req.headers.get('x-forwarded-for');
+  if (forwarded) {
+    return forwarded.split(',')[0].trim();
+  }
+  const realIp = req.headers.get('x-real-ip');
+  if (realIp) {
+    return realIp;
+  }
+  return 'unknown';
+}
+
 export async function POST(req: Request) {
   try {
+    // Get client IP for rate limiting
+    const clientIP = getClientIP(req);
+
+    // Check rate limit before processing
+    const rateLimitCheck = await RateLimiter.check(clientIP);
+    if (!rateLimitCheck.allowed) {
+      const resetDate = new Date(rateLimitCheck.resetAt * 1000);
+      logger.warn(`Rate limit exceeded for IP: ${clientIP}`, { prefix: 'RateLimit' });
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Daily limit of ${rateLimitCheck.limit} AI requests reached. Resets at ${resetDate.toLocaleTimeString()}.`,
+          rateLimited: true,
+          rateLimit: rateLimitCheck
+        },
+        { status: 429 }
+      );
+    }
+
     const { username, repo, query, filePath, fetchOnlyCurrentFile = false, history = [] } = await req.json();
     const repoKey = `${username}/${repo}`;
 
@@ -171,10 +204,14 @@ ${userQueryPrompt}Provide an insightful, technical response that directly addres
 
     const response = await result.response.text();
 
+    // Increment rate limit counter after successful response
+    const rateLimit = await RateLimiter.increment(clientIP);
+
     clearTimeout(timeoutId);
     return NextResponse.json({
       success: true,
-      response
+      response,
+      rateLimit
     });
   } catch (error) {
     clearTimeout(timeoutId);

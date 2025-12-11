@@ -21,7 +21,7 @@ import { CodeBlock } from "@/components/code-block"
 import Image from "next/image"
 
 import { ThemeToggle } from "@/components/ui/theme-toggle"
-import { GitHubRateLimit } from "@/components/ui/github-rate-limit"
+import { AIRateLimit } from "@/components/ui/ai-rate-limit"
 import { useGithubStars } from "@/hooks/useGithubStars"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
@@ -132,6 +132,11 @@ export default function AiAssistant({ username, repo }: AiAssistantProps) {
       const data = await response.json()
       if (!data.success) throw new Error(data.error || "Failed to generate response")
 
+      // Update rate limit in UI
+      if (data.rateLimit) {
+        window.dispatchEvent(new CustomEvent('aiRateLimitUpdate', { detail: data.rateLimit }))
+      }
+
       setMessages((prev) => [...prev, { role: "assistant", content: data.response || "No response received.", timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }])
     } catch (error) {
       console.error("Error generating response:", error)
@@ -196,7 +201,7 @@ export default function AiAssistant({ username, repo }: AiAssistantProps) {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <GitHubRateLimit />
+          <AIRateLimit />
           <ThemeToggle />
         </div>
       </div>
