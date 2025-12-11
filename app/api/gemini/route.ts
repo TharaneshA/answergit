@@ -6,8 +6,55 @@ import { generatePrompt, getRepoDataForPrompt } from '@/lib/prompt-generator';
 import { RedisCacheManager } from '@/lib/redis-cache-manager';
 import { RateLimiter } from '@/lib/rate-limiter';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
+// Primary and secondary Gemini API clients
+const primaryGenAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const secondaryGenAI = process.env.GEMINI_API_KEY_SECONDARY
+  ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY_SECONDARY)
+  : null;
+
+const MODEL_NAME = 'gemini-2.5-flash-lite';
+
+// Helper function to generate content with fallback
+async function generateWithFallback(prompt: string): Promise<string> {
+  const generationConfig = {
+    temperature: 0.8,
+    maxOutputTokens: 2048,
+  };
+
+  // Try primary key first
+  try {
+    const primaryModel = primaryGenAI.getGenerativeModel({ model: MODEL_NAME });
+    const result = await primaryModel.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig
+    });
+    logger.info('Generated response using primary API key', { prefix: 'Gemini' });
+    return result.response.text();
+  } catch (primaryError) {
+    const primaryErrorMsg = primaryError instanceof Error ? primaryError.message : 'Unknown error';
+    logger.warn(`Primary API key failed: ${primaryErrorMsg}`, { prefix: 'Gemini' });
+
+    // Try secondary key if available
+    if (secondaryGenAI) {
+      try {
+        const secondaryModel = secondaryGenAI.getGenerativeModel({ model: MODEL_NAME });
+        const result = await secondaryModel.generateContent({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig
+        });
+        logger.info('Generated response using secondary API key', { prefix: 'Gemini' });
+        return result.response.text();
+      } catch (secondaryError) {
+        const secondaryErrorMsg = secondaryError instanceof Error ? secondaryError.message : 'Unknown error';
+        logger.error(`Secondary API key also failed: ${secondaryErrorMsg}`, { prefix: 'Gemini' });
+        throw new Error(`Both API keys failed. Primary: ${primaryErrorMsg}, Secondary: ${secondaryErrorMsg}`);
+      }
+    } else {
+      // No secondary key configured, throw original error
+      throw primaryError;
+    }
+  }
+}
 
 // Define interfaces for data structures
 interface ContextStats {
@@ -193,16 +240,8 @@ ${userQueryPrompt}Provide an insightful, technical response that directly addres
     // After all context is prepared
     logger.context.stats(contextStats);
 
-    // Generate response using Gemini
-    const result = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.8,
-        maxOutputTokens: 2048,
-      }
-    });
-
-    const response = await result.response.text();
+    // Generate response using Gemini (with fallback to secondary key)
+    const response = await generateWithFallback(prompt);
 
     // Increment rate limit counter after successful response
     const rateLimit = await RateLimiter.increment(clientIP);
